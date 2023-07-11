@@ -66,8 +66,9 @@
 	</sql>
 
 	<select id="pageList" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
-		SELECT <include refid="Base_Column_List" />
-		FROM xxl_job_info AS t
+        select * from (
+        SELECT row_number() over(ORDER BY id DESC) r,<include refid="Base_Column_List"/>
+        FROM xxl_job_info t
 		<trim prefix="WHERE" prefixOverrides="AND | OR" >
 			<if test="jobGroup gt 0">
 				AND t.job_group = #{jobGroup}
@@ -76,22 +77,22 @@
                 AND t.trigger_status = #{triggerStatus}
             </if>
 			<if test="jobDesc != null and jobDesc != ''">
-				AND t.job_desc like CONCAT(CONCAT('%', #{jobDesc}), '%')
+				AND t.job_desc like CONCAT(CONCAT('%', #{jobDesc,jdbcType=VARCHAR}), '%')
 			</if>
 			<if test="executorHandler != null and executorHandler != ''">
-				AND t.executor_handler like CONCAT(CONCAT('%', #{executorHandler}), '%')
+				AND t.executor_handler like CONCAT(CONCAT('%', #{executorHandler,jdbcType=VARCHAR}), '%')
 			</if>
 			<if test="author != null and author != ''">
-				AND t.author like CONCAT(CONCAT('%', #{author}), '%')
+				AND t.author like CONCAT(CONCAT('%', #{author,jdbcType=VARCHAR}), '%')
 			</if>
 		</trim>
-		ORDER BY id DESC
-		LIMIT #{offset}, #{pagesize}
+        )
+        where r between #{offset}+1 and #{offset}+#{pagesize}
 	</select>
 
 	<select id="pageListCount" parameterType="java.util.HashMap" resultType="int">
 		SELECT count(1)
-		FROM xxl_job_info AS t
+		FROM xxl_job_info t
 		<trim prefix="WHERE" prefixOverrides="AND | OR" >
 			<if test="jobGroup gt 0">
 				AND t.job_group = #{jobGroup}
@@ -100,19 +101,25 @@
                 AND t.trigger_status = #{triggerStatus}
             </if>
 			<if test="jobDesc != null and jobDesc != ''">
-				AND t.job_desc like CONCAT(CONCAT('%', #{jobDesc}), '%')
+				AND t.job_desc like CONCAT(CONCAT('%', #{jobDesc,jdbcType=VARCHAR}), '%')
 			</if>
 			<if test="executorHandler != null and executorHandler != ''">
-				AND t.executor_handler like CONCAT(CONCAT('%', #{executorHandler}), '%')
+				AND t.executor_handler like CONCAT(CONCAT('%', #{executorHandler,jdbcType=VARCHAR}), '%')
 			</if>
 			<if test="author != null and author != ''">
-				AND t.author like CONCAT(CONCAT('%', #{author}), '%')
+				AND t.author like CONCAT(CONCAT('%', #{author,jdbcType=VARCHAR}), '%')
 			</if>
 		</trim>
 	</select>
 
-	<insert id="save" parameterType="com.xxl.job.admin.core.model.XxlJobInfo" useGeneratedKeys="true" keyProperty="id" >
+    <sql id='XXL_JOB_INFO_ID'>XXL_JOB_INFO_ID.NEXTVAL</sql>
+
+    <insert id="save" parameterType="com.xxl.job.admin.core.model.XxlJobInfo" useGeneratedKeys="true" keyProperty="id" >
+        <selectKey keyProperty="id" resultType="int" order="BEFORE">
+            select <include refid="XXL_JOB_INFO_ID" /> from dual
+        </selectKey>
 		INSERT INTO xxl_job_info (
+		    id,
 			job_group,
 			job_desc,
 			add_time,
@@ -137,30 +144,31 @@
 			trigger_last_time,
 			trigger_next_time
 		) VALUES (
+            #{id},
 			#{jobGroup},
-			#{jobDesc},
+			#{jobDesc,jdbcType=VARCHAR},
 			#{addTime},
 			#{updateTime},
-			#{author},
-			#{alarmEmail},
+			#{author,jdbcType=VARCHAR},
+			#{alarmEmail,jdbcType=VARCHAR},
 			#{scheduleType},
-			#{scheduleConf},
+			#{scheduleConf,jdbcType=VARCHAR},
 			#{misfireStrategy},
-			#{executorRouteStrategy},
-			#{executorHandler},
-			#{executorParam},
-			#{executorBlockStrategy},
-			#{executorTimeout},
+			#{executorRouteStrategy,jdbcType=VARCHAR},
+			#{executorHandler,jdbcType=VARCHAR},
+			#{executorParam,jdbcType=VARCHAR},
+			#{executorBlockStrategy,jdbcType=VARCHAR},
+			#{executorTimeout,jdbcType=VARCHAR},
 			#{executorFailRetryCount},
-			#{glueType},
-			#{glueSource},
-			#{glueRemark},
+			#{glueType,jdbcType=VARCHAR},
+			#{glueSource,jdbcType=CLOB},
+			#{glueRemark,jdbcType=VARCHAR},
 			#{glueUpdatetime},
-			#{childJobId},
+			#{childJobId,jdbcType=VARCHAR},
 			#{triggerStatus},
 			#{triggerLastTime},
 			#{triggerNextTime}
-		);
+		)
 		<!--<selectKey resultType="java.lang.Integer" order="AFTER" keyProperty="id">
 			SELECT LAST_INSERT_ID()
 			/*SELECT @@IDENTITY AS id*/
@@ -169,7 +177,7 @@
 
 	<select id="loadById" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
 		SELECT <include refid="Base_Column_List" />
-		FROM xxl_job_info AS t
+		FROM xxl_job_info t
 		WHERE t.id = #{id}
 	</select>
 
@@ -177,24 +185,24 @@
 		UPDATE xxl_job_info
 		SET
 			job_group = #{jobGroup},
-			job_desc = #{jobDesc},
+			job_desc = #{jobDesc,jdbcType=VARCHAR},
 			update_time = #{updateTime},
-			author = #{author},
-			alarm_email = #{alarmEmail},
+			author = #{author,jdbcType=VARCHAR},
+			alarm_email = #{alarmEmail,jdbcType=VARCHAR},
 			schedule_type = #{scheduleType},
-			schedule_conf = #{scheduleConf},
+			schedule_conf = #{scheduleConf,jdbcType=VARCHAR},
 			misfire_strategy = #{misfireStrategy},
-			executor_route_strategy = #{executorRouteStrategy},
-			executor_handler = #{executorHandler},
-			executor_param = #{executorParam},
-			executor_block_strategy = #{executorBlockStrategy},
+			executor_route_strategy = #{executorRouteStrategy,jdbcType=VARCHAR},
+			executor_handler = #{executorHandler,jdbcType=VARCHAR},
+			executor_param = #{executorParam,jdbcType=VARCHAR},
+			executor_block_strategy = #{executorBlockStrategy,jdbcType=VARCHAR},
 			executor_timeout = ${executorTimeout},
 			executor_fail_retry_count = ${executorFailRetryCount},
-			glue_type = #{glueType},
-			glue_source = #{glueSource},
-			glue_remark = #{glueRemark},
+			glue_type = #{glueType,jdbcType=VARCHAR},
+			glue_source = #{glueSource,jdbcType=CLOB},
+			glue_remark = #{glueRemark,jdbcType=VARCHAR},
 			glue_updatetime = #{glueUpdatetime},
-			child_jobid = #{childJobId},
+			child_jobid = #{childJobId,jdbcType=VARCHAR},
 			trigger_status = #{triggerStatus},
 			trigger_last_time = #{triggerLastTime},
 			trigger_next_time = #{triggerNextTime}
@@ -209,7 +217,7 @@
 
 	<select id="getJobsByGroup" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
 		SELECT <include refid="Base_Column_List" />
-		FROM xxl_job_info AS t
+		FROM xxl_job_info t
 		WHERE t.job_group = #{jobGroup}
 	</select>
 
@@ -220,12 +228,13 @@
 
 
 	<select id="scheduleJobQuery" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
-		SELECT <include refid="Base_Column_List" />
-		FROM xxl_job_info AS t
+        select * from (
+        SELECT row_number() over(ORDER BY id ASC) r, <include refid="Base_Column_List"/>
+        FROM xxl_job_info t
 		WHERE t.trigger_status = 1
 			and t.trigger_next_time <![CDATA[ <= ]]> #{maxNextTime}
-		ORDER BY id ASC
-		LIMIT #{pagesize}
+        )
+        where r between 0 and #{pagesize}
 	</select>
 
 	<update id="scheduleUpdate" parameterType="com.xxl.job.admin.core.model.XxlJobInfo"  >
