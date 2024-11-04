@@ -154,5 +154,22 @@
                 </dependency>
             </dependencies>
         </profile>
+        <profile>
+            <id>postgresql</id>
+            <activation>
+                <property>
+                    <name>xxljob-dialect</name>
+                    <value>postgresql</value>
+                </property>
+            </activation>
+            <dependencies>
+                <!-- 使用 postgresql 的依赖 -->
+                <dependency>
+                    <groupId>org.postgresql</groupId>
+                    <artifactId>postgresql</artifactId>
+                    <version>42.2.16</version>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 </project>
